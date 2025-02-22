@@ -104,3 +104,18 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * are logged in.
  */
 export const publicProcedure = t.procedure.use(timingMiddleware);
+
+/**
+ * Private (authenticated) procedure
+ *
+ * This procedure checks for authentication before executing, ensuring that only authorized users can
+ * access the route. You can modify the authentication logic to fit your requirements (e.g., checking JWT, session, etc.).
+ */
+export const privateProcedure = t.procedure.use(timingMiddleware).use(async ({ ctx, next }) => {
+  // Check if the user is authenticated (e.g., checking session or JWT token)
+  if (!ctx.db.user) {
+    throw new Error("Unauthorized");
+  }
+
+  return await next();
+});

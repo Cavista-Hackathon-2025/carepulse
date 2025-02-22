@@ -34,6 +34,7 @@ model FoodScan {
   userId        String   @unique
   user          User     @relation(fields: [userId], references: [id])
   foodName      String
+  imageUrl      String?
   calories      Float?
   nutrients     Json // Store parsed nutrient data
   flaggedIssues String? // e.g. "High in sodium"
@@ -60,6 +61,7 @@ model MealSchedule {
   mealPlan     Json // AI-generated meal plan
   reminderSent Boolean  @default(false)
   createdAt    DateTime @default(now())
+  healthGoals  String[]
 }
 
 model Notification {
