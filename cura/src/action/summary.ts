@@ -23,45 +23,57 @@ export const generateDailySummary = async (userId: string) => {
     where: { userId, createdAt: { gte: todayStart } },
   });
 
+  if (!todayMeals.length) {
+    throw new Error("No meal data found for today.");
+  }
+
   // AI generates summary based on meals
   const summary = await generateHealthSummaryAI(todayMeals);
+  if (!summary) {
+    throw new Error("Failed to generate health summary.");
+  }
 
   // Store in DB
-  const savedSummary = await prisma.summary.create({
+  return prisma.summary.create({
     data: {
       userId,
       type: "daily",
-      date: new Date(), // Current date
+      date: new Date(),
       dietScore: summary.dietScore,
       healthRisks: summary.healthRisks,
       improvementTips: summary.improvementTips,
     },
   });
-
-  return savedSummary;
 };
 
 export const generateWeeklySummary = async (userId: string) => {
-    const lastWeekStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
-  
-    const lastWeekMeals = await prisma.mealLog.findMany({
-      where: { userId, createdAt: { gte: lastWeekStart } },
-    });
-  
-    // AI generates summary based on meals
-    const summary = await generateHealthSummaryAI(lastWeekMeals);
-  
-    // Store in DB
-    const savedSummary = await prisma.summary.create({
-      data: {
-        userId,
-        type: "weekly",
-        date: new Date(), // Current date
-        dietScore: summary.dietScore,
-        healthRisks: summary.healthRisks,
-        improvementTips: summary.improvementTips,
-      },
-    });
-  
-    return savedSummary;
-  };
+  const lastWeekStart = new Date();
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+  lastWeekStart.setHours(0, 0, 0, 0);
+
+  const lastWeekMeals = await prisma.mealLog.findMany({
+    where: { userId, createdAt: { gte: lastWeekStart } },
+  });
+
+  if (!lastWeekMeals.length) {
+    throw new Error("No meal data found for the past week.");
+  }
+
+  // AI generates summary based on meals
+  const summary = await generateHealthSummaryAI(lastWeekMeals);
+  if (!summary) {
+    throw new Error("Failed to generate health summary.");
+  }
+
+  // Store in DB
+  return prisma.summary.create({
+    data: {
+      userId,
+      type: "weekly",
+      date: new Date(),
+      dietScore: summary.dietScore,
+      healthRisks: summary.healthRisks,
+      improvementTips: summary.improvementTips,
+    },
+  });
+};

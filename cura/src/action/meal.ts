@@ -1,5 +1,4 @@
 'use server'
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { generateMealPlan } from "@/lib/ai";
 import { currentUser } from '@clerk/nextjs/server'

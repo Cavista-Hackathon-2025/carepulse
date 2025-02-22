@@ -17,8 +17,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Podscribe",
-  description: "Article into rich Audio Summaries",
+  title: "Cura.AI",
+  description: "Cura.AI is a health and wellness platform that helps you track your nutrition, plan your meals, and stay healthy.",
 };
 
 export default function RootLayout({

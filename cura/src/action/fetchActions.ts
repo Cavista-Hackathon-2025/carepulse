@@ -128,7 +128,7 @@ interface UserData {
           //     flaggedIssues: scan.flaggedIssues,
           //     createdAt: scan.createdAt,
           //   })),
-          mealSchedules: userData.MealSchedule.map((schedule) => ({
+          mealSchedules: userData.MealSchedule.map((schedule : any) => ({
               id: schedule.id,
               mealTime: schedule.mealTime,
               mealPlan: schedule.mealPlan,
@@ -320,5 +320,24 @@ export async function getNotifications(userId: string) {
   } catch (error) {
     console.error("Error fetching notifications:", error);
     return { success: false, error: "Failed to fetch notifications" };
+  }
+}
+
+export async function fetchMealPlan(userId: string) {
+  const user = await currentUser();
+  if (!user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    const mealPlan = await prisma.mealSchedule.findMany({
+      where: { userId },
+      select: { mealPlan: true },
+    });
+
+    return { success: true, mealPlan };
+  } catch (error) {
+    console.error("Error fetching meal plan:", error);
+    return { success: false, error: "Failed to fetch meal plan" };
   }
 }
