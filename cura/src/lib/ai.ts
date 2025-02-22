@@ -1,5 +1,12 @@
 import OpenAI from "openai"; // Use OpenAI or Gemini (Google AI)
 import { PrismaClient } from "@prisma/client";
+import { MealLog } from "@prisma/client";
+
+interface healthSummary {
+  dietScore: number;
+  healthRisks: string;
+  improvementTips: string;
+}
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // Replace with your key
@@ -98,6 +105,49 @@ export async function scanFoodLabelWithAI(imageBase64: string) {
   }
 }
 
+export async function scanHealthReportWithAI(imageBase64: string, userId: string) {
+  try {
+    // Step 1: AI scans the health report
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-vision-preview",
+      messages: [
+        { role: "system", content: "You are an AI that scans health reports, identifies health conditions, and suggests personalized meal plans." },
+        { role: "user", content: `Analyze this health report: ${imageBase64}` }
+      ],
+      max_tokens: 700,
+    });
+
+    const aiResponse = response.choices[0]?.message?.content || "";
+    const healthAnalysis = parseHealthReportScan(aiResponse);
+
+    // Step 2: Update the database with health insights
+    await prisma.healthReports.create({
+      data: {
+        userId,
+        reportData: healthAnalysis,
+        createdAt: new Date(),
+      },
+    });
+
+    // Step 3: Generate meal plans based on AI insights
+    const mealPlan = generateMealPlan(healthAnalysis);
+
+    return { healthAnalysis, mealPlan };
+  } catch (error) {
+    console.error("Health report scanning failed:", error);
+    throw new Error("Failed to scan health report.");
+  }
+}
+
+function parseHealthReportScan(response: string) {
+  try {
+    return JSON.parse(response); // Ensure AI response is JSON structured
+  } catch {
+    return { insights: response }; // Fallback if not JSON
+  }
+}
+
+
 /**
  * 🛠️ PARSING FUNCTIONS (Extract structured data from AI responses)
  */
@@ -141,7 +191,7 @@ function parseNutrients(nutrientString: string) {
 }
 
   
-  export const generateHealthSummaryAI = async (meals: MealLog[]): Promise<HealthSummary> => {
+  export const generateHealthSummaryAI = async (meals: MealLog[]): Promise<healthSummary> => {
     if (meals.length === 0) {
       return {
         dietScore: 0,
@@ -149,20 +199,20 @@ function parseNutrients(nutrientString: string) {
         improvementTips: "Start logging your meals to receive personalized health insights.",
       };
     }
-  
+
     // Extract relevant data from meal logs
     const mealDescriptions = meals
       .map((meal) => `${meal.name}: ${JSON.stringify(meal.nutrients)}`)
       .join("\n");
-  
+
     // AI prompt
     const prompt = `
       You are a nutrition AI assistant. Analyze the following meal logs and provide a summary of the user's health based on their food intake.
       Identify trends, potential deficiencies, and suggestions for a balanced diet.
-  
+
       Meals logged:
       ${mealDescriptions}
-  
+
       Generate a concise health summary in easy-to-understand language.
       Return the response as a JSON object with the following structure:
       {
@@ -171,17 +221,17 @@ function parseNutrients(nutrientString: string) {
         "improvementTips": string // Suggestions for improving the diet
       }
     `;
-  
+
     try {
       const response = await openai.chat.completions.create({
         model: "gpt-4-turbo",
         messages: [{ role: "system", content: prompt }],
         temperature: 0.7,
       });
-  
+
       // Parse the AI response into a structured object
       const summary = JSON.parse(response.choices[0].message.content);
-  
+
       return {
         dietScore: summary.dietScore,
         healthRisks: summary.healthRisks,

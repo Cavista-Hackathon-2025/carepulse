@@ -87,3 +87,4 @@ model MealLog {
   @@index([userId])
   @@index([createdAt])
 }
+
