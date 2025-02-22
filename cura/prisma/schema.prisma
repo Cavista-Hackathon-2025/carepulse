@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,4 +8,82 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String         @id @default(uuid())
+  email             String         @unique
+  name              String?
+  age               Int?
+  gender            String? // "male", "female", "other"
+  weight            Float? // in kg
+  height            Float? // in cm
+  healthGoals       String? // "weight loss", "muscle gain", "maintenance"
+  medicalConditions String[] // e.g. ["diabetes", "hypertension"]
+  allergies         String[] // e.g. ["peanuts", "gluten"]
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  summaries         Summary[]
+  FoodScan          FoodScan?
+  MealSchedule      MealSchedule[]
+  Notification      Notification[]
+  MealLog           MealLog[]
+}
+
+model FoodScan {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  foodName      String
+  imageUrl      String?
+  calories      Float?
+  nutrients     Json // Store parsed nutrient data
+  flaggedIssues String? // e.g. "High in sodium"
+  createdAt     DateTime @default(now())
+}
+
+model Summary {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  type            String // "daily" or "weekly"
+  date            DateTime
+  dietScore       Float? // 0-100 based on AI analysis
+  healthRisks     String? // e.g. "Too much sugar this week"
+  improvementTips String? // e.g. "Eat more fiber"
+  createdAt       DateTime @default(now())
+}
+
+model MealSchedule {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  mealTime     DateTime // Scheduled time for meal
+  mealPlan     Json // AI-generated meal plan
+  reminderSent Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  healthGoals  String[]
+}
+
+model Notification {
+  id      String   @id @default(uuid())
+  userId  String
+  user    User     @relation(fields: [userId], references: [id])
+  type    String // "meal_reminder", "health_alert"
+  message String
+  sentAt  DateTime @default(now())
+}
+
+model MealLog {
+  id        String   @id @default(uuid()) // Unique identifier for the meal log
+  userId    String // ID of the user who logged the meal
+  user      User     @relation(fields: [userId], references: [id]) // Relationship to the User model
+  name      String // Name of the meal (e.g., "Breakfast", "Lunch", "Chicken Salad")
+  nutrients Json? // Nutrient data (e.g., { calories: 500, protein: 30, carbs: 45, fat: 20 })
+  createdAt DateTime @default(now()) // Timestamp when the meal was logged
+  updatedAt DateTime @updatedAt // Timestamp when the meal log was last updated
+
+  // Indexes for better query performance
+  @@index([userId])
+  @@index([createdAt])
 }
