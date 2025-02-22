@@ -6,26 +6,36 @@ import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import Sidebar from '@/components/sidebar';
+import { fetchMealPlan } from '@/action/fetchActions';
 
+interface Meal {
+  name: string;
+  image: string;
+  calories: number;
+}
+
+interface MealPlan {
+  day: string;
+  meals: Meal[];
+  totalCalories: number;
+}
 
 const Page = () => {
   const { user } = useUser();
-  const [stats, setStats] = useState(null);
+  const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user) fetchDashboardData();
+    if (user) fetchMealPlanData();
   }, [user]);
 
-  const fetchDashboardData = async () => {
+  const fetchMealPlanData = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/dashboard');
-      if (!response.ok) throw new Error('Failed to fetch dashboard stats');
-      const data = await response.json();
-      setStats(data.stats);
+      const data = await fetchMealPlan(user?.id as any);
+      setMealPlan(data.mealPlan);
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
+      console.error('Error fetching meal plan:', error);
     } finally {
       setIsLoading(false);
     }
@@ -34,7 +44,7 @@ const Page = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-        <Sidebar/>
+      <Sidebar />
 
       {/* Main Content */}
       <main className="flex-1 p-8 overflow-auto">
@@ -55,32 +65,36 @@ const Page = () => {
                 <SelectItem value="wednesday">Wednesday</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="icon" className="border-gray-300 shadow-sm"><History className="h-5 w-5 text-gray-700" /></Button>
-            <Button variant="outline" size="icon"><Bell className="h-5 w-5" /></Button>
+            <Button variant="outline" size="icon" className="border-gray-300 shadow-sm">
+              <History className="h-5 w-5 text-gray-700" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <Bell className="h-5 w-5" />
+            </Button>
           </div>
         </header>
 
-        <div className="bg-white p-6 shadow-lg rounded-lg">
-          <h3 className="text-xl font-semibold mb-4 text-gray-700">Monday</h3>
-          <div className="grid grid-cols-3 gap-6">
-            <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
-              <img src="/images/breakfast.jpg" alt="Scrambled eggs with wheat toast" className="rounded-lg shadow-sm" />
-              <p className="mt-2 font-medium text-gray-800">Scrambled eggs with wheat toast</p>
-              <p className="text-gray-500">380 kcal</p>
+        {isLoading ? (
+          <p className="text-center text-gray-500">Loading meal plan...</p>
+        ) : mealPlan ? (
+          <div className="bg-white p-6 shadow-lg rounded-lg">
+            <h3 className="text-xl font-semibold mb-4 text-gray-700">{mealPlan.day}</h3>
+            <div className="grid grid-cols-3 gap-6">
+              {mealPlan.meals.map((meal, index) => (
+                <div key={index} className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
+                  <img src={meal.image} alt={meal.name} className="rounded-lg shadow-sm" />
+                  <p className="mt-2 font-medium text-gray-800">{meal.name}</p>
+                  <p className="text-gray-500">{meal.calories} kcal</p>
+                </div>
+              ))}
             </div>
-            <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
-              <img src="/images/lunch.jpg" alt="Jollof rice with fish" className="rounded-lg shadow-sm" />
-              <p className="mt-2 font-medium text-gray-800">Jollof rice with fish</p>
-              <p className="text-gray-500">650 kcal</p>
-            </div>
-            <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
-              <img src="/images/dinner.jpg" alt="Rice and chicken stew with spinach" className="rounded-lg shadow-sm" />
-              <p className="mt-2 font-medium text-gray-800">Rice and chicken stew with spinach</p>
-              <p className="text-gray-500">650 kcal</p>
-            </div>
+            <p className="mt-4 text-green-600 font-semibold">
+              Total calories to be consumed: {mealPlan.totalCalories} kcal
+            </p>
           </div>
-          <p className="mt-4 text-green-600 font-semibold">Total calories to be consumed: 1680 kcal</p>
-        </div>
+        ) : (
+          <p className="text-center text-red-500">Failed to load meal plan.</p>
+        )}
       </main>
     </div>
   );
