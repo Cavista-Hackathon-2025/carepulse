@@ -1,7 +1,5 @@
-
-
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Poppins } from "next/font/google"; // Import Poppins from Google Fonts
 import "./globals.css";
 import {
   ClerkProvider,
@@ -9,17 +7,13 @@ import {
   SignedIn,
   SignedOut,
   UserButton
-} from '@clerk/nextjs'
+} from '@clerk/nextjs';
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
+// Load Poppins font
+const poppins = Poppins({
+  subsets: ["latin"], // Specify the subset(s) you want to load
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"], // Specify the weights you need
+  variable: "--font-poppins", // Define a CSS variable for the font
 });
 
 export const metadata: Metadata = {
@@ -35,13 +29,12 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
-    </html>
+        <body
+          className={`${poppins.variable} font-sans antialiased`} // Apply the Poppins font
+        >
+          {children}
+        </body>
+      </html>
     </ClerkProvider>
-    
   );
 }
