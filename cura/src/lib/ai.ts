@@ -9,7 +9,11 @@ interface healthSummary {
 }
 
 const prisma = new PrismaClient();
+<<<<<<< HEAD
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY}); // Replace with your key
+=======
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // Replace with your key
+>>>>>>> parent of 9db7541 (updated ackedn and small fix to frontend)
 
 /**
  * 🥗 AI FOOD IMAGE ANALYSIS

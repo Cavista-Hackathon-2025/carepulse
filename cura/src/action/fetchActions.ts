@@ -341,39 +341,3 @@ export async function fetchMealPlan(userId: string) {
     return { success: false, error: "Failed to fetch meal plan" };
   }
 }
-
-export async function fetchNutritionData(userId: string) {
-  const user = await currentUser();
-  if (!user) {
-    return { success: false, error: "Unauthorized" };
-  }
-
-  try {
-    // Fetch user's food scans and calculate total nutrition data
-    const foodScans = await prisma.foodScan.findMany({
-      where: { userId },
-      select: { calories: true, nutrients: true },
-    });
-
-    let totalCalories = 0;
-    let totalNutrients: Record<string, number> = {};
-
-    foodScans.forEach((scan) => {
-      if (scan.calories) {
-        totalCalories += scan.calories;
-      }
-
-      if (scan.nutrients) {
-        const nutrients = typeof scan.nutrients === "string" ? JSON.parse(scan.nutrients) : scan.nutrients;
-        Object.entries(nutrients).forEach(([key, value]) => {
-          totalNutrients[key] = (totalNutrients[key] || 0) + (value as number);
-        });
-      }
-    });
-
-    return { success: true, calories: totalCalories, nutrients: totalNutrients };
-  } catch (error) {
-    console.error("Error fetching nutrition data:", error);
-    return { success: false, error: "Failed to fetch nutrition data" };
-  }
-}

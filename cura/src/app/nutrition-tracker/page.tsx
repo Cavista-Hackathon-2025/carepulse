@@ -1,221 +1,86 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from "react";
-import { 
-  Flame, Beef, Plus, Trash2, ArrowUp, ArrowDown,
-  Clock, Calendar 
-} from "lucide-react";
-import Sidebar from "@/components/sidebar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import  Sidebar  from "@/components/sidebar";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
-import { fetchNutritionData } from "@/action/fetchActions";
-import { useUser } from "@clerk/nextjs";
-
-interface NutritionStats {
-  calories: number;
-  protein: number;
-  carbs: number;
-  goals: {
-    calories: number;
-    protein: number;
-    carbs: number;
-  };
-}
-
-interface MealEntry {
-  id: string;
-  name: string;
-  timestamp: string;
-}
-
-const StatCard = ({ 
-  title, 
-  current, 
-  goal, 
-  icon: Icon, 
-  unit,
-  isLoading 
-}: {
-  title: string;
-  current: number;
-  goal: number;
-  icon: any;
-  unit: string;
-  isLoading: boolean;
-}) => {
-  const percentage = (current / goal) * 100;
-  const isOverGoal = current > goal;
-
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        {isLoading ? (
-          <>
-            <Skeleton className="h-4 w-24 mb-2" />
-            <Skeleton className="h-8 w-32" />
-          </>
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">{title}</span>
-              <Icon className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold">
-                  {current} {unit}
-                </span>
-                <span className={`flex items-center text-sm ${
-                  isOverGoal ? 'text-red-500' : 'text-green-500'
-                }`}>
-                  {isOverGoal ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                  {Math.abs(goal - current)} {unit}
-                </span>
-              </div>
-              <Progress value={Math.min(percentage, 100)} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                Goal: {goal} {unit}
-              </p>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
+import { Home, Utensils, BarChart } from "lucide-react";
 
 export default function NutritionTracker() {
   const [meal, setMeal] = useState("");
-  const [meals, setMeals] = useState<MealEntry[]>([]);
-  const [nutritionStats, setNutritionStats] = useState<NutritionStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const { user } = useUser();
-
-  useEffect(() => {
-    if (user?.id) {
-      const getNutritionData = async () => {
-        try {
-          const data = await fetchNutritionData(user.id);
-          setNutritionStats(data);
-        } catch (error) {
-          console.error("Error fetching nutrition data:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      getNutritionData();
-    }
-  }, [user?.id]);
+  const [meals, setMeals] = useState<string[]>([]);
 
   const handleLogMeal = (e: React.FormEvent) => {
     e.preventDefault();
     if (meal.trim() !== "") {
-      const newMeal: MealEntry = {
-        id: Date.now().toString(),
-        name: meal,
-        timestamp: new Date().toLocaleTimeString(),
-      };
-      setMeals([newMeal, ...meals]);
+      setMeals([...meals, meal]);
       setMeal("");
     }
   };
 
-  const handleDeleteMeal = (id: string) => {
-    setMeals(meals.filter(meal => meal.id !== id));
-  };
-
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex h-screen">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-7xl p-8">
-          <header className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight">Nutrition Tracker</h1>
-            <p className="text-muted-foreground">Track your daily nutrition intake and goals</p>
-          </header>
+      {/* Main Content */}
+      <main className="flex-1 p-6">
+        <h1 className="text-2xl font-bold mb-4">Nutrition Tracker</h1>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
-            <StatCard
-              title="Calories"
-              current={nutritionStats?.calories || 0}
-              goal={nutritionStats?.goals.calories || 2000}
-              icon={Flame}
-              unit="kcal"
-              isLoading={isLoading}
-            />
-            <StatCard
-              title="Protein"
-              current={nutritionStats?.protein || 0}
-              goal={nutritionStats?.goals.protein || 150}
-              icon={Beef}
-              unit="g"
-              isLoading={isLoading}
-            />
-            <StatCard
-              title="Carbs"
-              current={nutritionStats?.carbs || 0}
-              goal={nutritionStats?.goals.carbs || 250}
-              icon={Beef}
-              unit="g"
-              isLoading={isLoading}
-            />
-          </div>
-
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Log a Meal</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleLogMeal} className="flex gap-2">
-                <Input
-                  value={meal}
-                  onChange={(e) => setMeal(e.target.value)}
-                  placeholder="Enter meal (e.g., Chicken Salad)"
-                  className="flex-1"
-                />
-                <Button type="submit">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Meal
-                </Button>
-              </form>
+        {/* Dashboard Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <h2 className="text-lg font-semibold">Calories</h2>
+              <p className="text-2xl font-bold">1,800 kcal</p>
             </CardContent>
           </Card>
+          <Card>
+            <CardContent className="p-4">
+              <h2 className="text-lg font-semibold">Protein</h2>
+              <p className="text-2xl font-bold">80g</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <h2 className="text-lg font-semibold">Carbs</h2>
+              <p className="text-2xl font-bold">200g</p>
+            </CardContent>
+          </Card>
+        </div>
 
-          {meals.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Today's Meals</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {meals.map((meal) => (
-                    <div
-                      key={meal.id}
-                      className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>{meal.name}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {meal.timestamp}
-                        </span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteMeal(meal.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        {/* Meal Logger */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-2">Log a Meal</h2>
+          <form onSubmit={handleLogMeal} className="flex gap-2">
+            <Input value={meal} onChange={(e) => setMeal(e.target.value)} placeholder="Enter meal (e.g., Chicken Salad)" />
+            <Button type="submit">Log Meal</Button>
+          </form>
+        </div>
+
+        {/* Logged Meals */}
+        {meals.length > 0 && (
+          <Card>
+            <CardContent className="p-4">
+              <h2 className="text-lg font-semibold mb-2">Logged Meals</h2>
+              <ul className="list-disc pl-4">
+                {meals.map((m, index) => (
+                  <li key={index}>{m}</li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Health Insights */}
+        <div className="mt-6">
+          <h2 className="text-xl font-semibold mb-2">Health Insights</h2>
+          <Card>
+            <CardContent className="p-4">
+              <p>Calories Consumed: <strong>12,600 kcal</strong></p>
+              <p>Protein Intake: <strong>560g</strong></p>
+              <p>Carbs Intake: <strong>1,400g</strong></p>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
