@@ -1,21 +1,19 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getStorage } from 'firebase/storage';
+
 const firebaseConfig = {
-  apiKey: "AIzaSyA7JA78q7DVNqLzWERzsLIM06Zx3QF2WMg",
-  authDomain: "carepulse-f10c4.firebaseapp.com",
-  projectId: "carepulse-f10c4",
-  storageBucket: "carepulse-f10c4.firebasestorage.app",
-  messagingSenderId: "578150240928",
-  appId: "1:578150240928:web:a756d839b84bf4e4a92fc5",
-  measurementId: "G-GGSNHPQGBZ"
+  apiKey: "AIzaSyDgt0ZXVPK1dhMqQZgaXtjXJe9UYO7hmUs",
+  authDomain: "plinxu.firebaseapp.com",
+  projectId: "plinxu",
+  storageBucket: "plinxu.appspot.com",
+  messagingSenderId: "82367704007",
+  appId: "1:82367704007:web:23f078d8fa9abc95e687e2",
+  measurementId: "G-E28MBDNS3C"
 };
 
-// Initialize Firebase
-export const app = initializeApp(firebaseConfig);
-export const analytics = getAnalytics(app);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const storage = getStorage(app);
+
+export { app, storage };

@@ -1,0 +1,8 @@
+{
+	"dependencies": {
+		"@langchain/community": "^0.3.32",
+		"@tanstack/react-query": "^5.66.9",
+		"framer-motion": "^12.4.7",
+		"langchain": "^0.3.19"
+	}
+}

@@ -2,6 +2,10 @@
 
 import { PrismaClient } from "@prisma/client";
 import { MealLog } from "@prisma/client";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
 
 const gemini = {
   chat: {
@@ -31,27 +35,57 @@ const prisma = new PrismaClient();
  * 🥗 AI FOOD IMAGE ANALYSIS (using Gemini)
  * Uses AI to recognize food in an image and estimate calories & nutrients.
  */
-export async function analyzeFoodWithAI(imageUrl: string) {
+export async function formatImageForGemini(base64Image: string, mimeType: string) {
+  return {
+    inlineData: {
+      data: base64Image,
+      mimeType
+    }
+  };
+}
+
+// Modified analysis function
+export async function analyzeFoodWithAI(base64Image: string, mimeType: string) {
   try {
-    const response = await gemini.chat.completions.create({
-      model: "gemini-vision", // Assuming this is the Gemini model name
-      messages: [
-        { role: "system", content: "You are an AI food analyst that detects food and estimates nutrition values." },
-        { role: "user", content: `Analyze the food in this image: ${imageUrl}` },
-      ],
-      max_tokens: 500,
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+    
+    const prompt = `
+      Analyze this food image and estimate nutritional values. Consider:
+      - Food identification (main ingredients)
+      - Calorie estimation
+      - Macronutrient breakdown (proteins, carbs, fats)
+      - Micronutrients if detectable
+      - Portion size estimation
+      Return in JSON format with numerical values only.
+    `;
 
-    const aiResponse = response.choices[0]?.message?.content || "";
-    const extractedData = parseFoodAnalysis(aiResponse);
+    const imagePart = formatImageForGemini(base64Image, mimeType);
 
-    return extractedData;
+    const result = await model.generateContent([prompt, imagePart]);
+    const response = result.response;
+    
+    return parseFoodAnalysis(response.text());
   } catch (error) {
     console.error("Food analysis failed:", error);
-    throw new Error("Failed to analyze food.");
+    throw new Error("Failed to analyze food");
   }
 }
 
+// // Example parser function
+// function parseFoodAnalysis(textResponse: string) {
+//   try {
+//     const jsonMatch = textResponse.match(/{[\s\S]*}/);
+//     if (!jsonMatch) throw new Error('Invalid response format');
+    
+//     return JSON.parse(jsonMatch[0]);
+//   } catch (error) {
+//     console.error("Error parsing AI response:", error);
+//     return {
+//       error: "Failed to parse nutrition data",
+//       rawResponse: textResponse
+//     };
+//   }
+// }
 /**
  * 🏥 AI HEALTH SUMMARY (using Gemini)
  * Generates a health summary based on the user's past meals.
@@ -64,7 +98,7 @@ export async function analyzeHealthData(meals: any[]) {
     Consider caloric intake, nutrient balance, and potential health risks.`;
 
     const response = await gemini.chat.completions.create({
-      model: "gemini-turbo", // Use the appropriate Gemini model
+      model: "gemini-pro", // Use the appropriate Gemini model
       messages: [{ role: "user", content: prompt }],
       max_tokens: 300,
     });
@@ -83,7 +117,7 @@ export async function analyzeHealthData(meals: any[]) {
 export async function generateMealPlan(healthGoal: string[]) {
   try {
     const response = await gemini.chat.completions.create({
-      model: "gemini-turbo",
+      model: "gemini-pro",
       messages: [
         { role: "system", content: "You are a nutritionist AI that creates personalized meal plans." },
         { role: "user", content: `Create a 3-meal daily plan for a person with the goal: ${healthGoal}.` },
@@ -105,7 +139,7 @@ export async function generateMealPlan(healthGoal: string[]) {
 export async function scanFoodLabelWithAI(imageBase64: string) {
   try {
     const response = await gemini.chat.completions.create({
-      model: "gemini-vision", // Assuming this is the Gemini model for vision
+      model: "gemini-pro", // Assuming this is the Gemini model for vision
       messages: [
         { role: "system", content: "You are an AI that scans food labels and flags harmful ingredients." },
         { role: "user", content: `Scan this food label: ${imageBase64}` },
@@ -128,7 +162,7 @@ export async function scanFoodLabelWithAI(imageBase64: string) {
 export async function scanHealthReportWithAI(imageBase64: string, userId: string) {
   try {
     const response = await gemini.chat.completions.create({
-      model: "gemini-vision", // Assuming this is the Gemini model for scanning health reports
+      model: "gemini-pro-vision", // Assuming this is the Gemini model for scanning health reports
       messages: [
         { role: "system", content: "You are an AI that scans health reports, identifies health conditions, and suggests personalized meal plans." },
         { role: "user", content: `Analyze this health report: ${imageBase64}` },

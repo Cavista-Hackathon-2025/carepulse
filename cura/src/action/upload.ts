@@ -27,6 +27,7 @@ export async function uploadFoodImage(formData: FormData) {
       throw new Error("Unauthorized");
     }
 
+    console.log(input.imageBase64)
     // Upload image to cloud storage
     const imageUrl = await uploadToStorage(input.imageBase64);
 
