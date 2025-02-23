@@ -9,7 +9,7 @@ interface healthSummary {
 }
 
 const prisma = new PrismaClient();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // Replace with your key
+const openai = new OpenAI({ apiKey: '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', dangerouslyAllowBrowser: true }); // Replace with your key
 
 /**
  * 🥗 AI FOOD IMAGE ANALYSIS
