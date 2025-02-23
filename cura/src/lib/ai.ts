@@ -1,3 +1,4 @@
+'use server'
 import OpenAI from "openai"; // Use OpenAI or Gemini (Google AI)
 import { PrismaClient } from "@prisma/client";
 import { MealLog } from "@prisma/client";
@@ -9,11 +10,7 @@ interface healthSummary {
 }
 
 const prisma = new PrismaClient();
-<<<<<<< HEAD
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY}); // Replace with your key
-=======
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // Replace with your key
->>>>>>> parent of 9db7541 (updated ackedn and small fix to frontend)
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 /**
  * 🥗 AI FOOD IMAGE ANALYSIS

@@ -1,103 +1,290 @@
-'use client';
-import { useState, useEffect } from 'react';
+'use client'
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bell, FileText, Settings, ScanIcon as Scanner, Activity, Utensils, Home, History, ChevronDown } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Sidebar from "@/components/sidebar";
+import {
+  Bell, Plus, Calendar, ChevronDown, History,
+  Utensils, ArrowRight, Loader2, Scale, Clock,
+  Sparkles, AlertTriangle
+} from 'lucide-react';
 import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import Sidebar from '@/components/sidebar';
-import { fetchMealPlan } from '@/action/fetchActions';
+import { fetchMealPlan, fetchUserData } from '@/action/fetchActions';
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Meal {
   name: string;
   image: string;
   calories: number;
+  time: string;
+  type: string;
+  nutrients?: {
+    protein?: number;
+    carbs?: number;
+    fats?: number;
+  };
 }
 
 interface MealPlan {
   day: string;
   meals: Meal[];
   totalCalories: number;
+  targetCalories: number;
+  progress: number;
+  healthScore?: number;
 }
 
-const Page = () => {
+export default function EnhancedMealPlanner() {
   const { user } = useUser();
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
+  const [userData, setUserData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedDay, setSelectedDay] = useState('today');
+  const [showHealthTip, setShowHealthTip] = useState(true);
 
   useEffect(() => {
-    if (user) fetchMealPlanData();
-  }, [user]);
+    if (user) {
+      fetchData();
+    }
+  }, [user, selectedDay]);
 
-  const fetchMealPlanData = async () => {
+  const fetchData = async () => {
     setIsLoading(true);
     try {
-      const data = await fetchMealPlan(user?.id as any);
-      setMealPlan(data.mealPlan);
+      const [mealPlanData, userDataResponse] = await Promise.all([
+        fetchMealPlan(user?.id as string),
+        fetchUserData()
+      ]);
+
+      if (userDataResponse.success && userDataResponse.userData) {
+        setUserData(userDataResponse.userData);
+      }
+
+      if (mealPlanData.success) {
+        // Transform the meal plan data if needed
+        const transformedMealPlan = transformMealPlanData(mealPlanData.mealPlan);
+        setMealPlan(transformedMealPlan);
+      }
     } catch (error) {
-      console.error('Error fetching meal plan:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <Sidebar />
+  const transformMealPlanData = (data: any) => {
+    // For demo purposes, using static data - replace with actual data transformation
+    return {
+      day: selectedDay,
+      meals: [
+        {
+          name: "Protein-Packed Overnight Oats",
+          image: "/api/placeholder/300/200",
+          calories: 350,
+          time: "8:00 AM",
+          type: "Breakfast",
+          nutrients: {
+            protein: 15,
+            carbs: 45,
+            fats: 12
+          }
+        },
+        {
+          name: "Mediterranean Chicken Salad",
+          image: "/api/placeholder/300/200",
+          calories: 450,
+          time: "12:30 PM",
+          type: "Lunch",
+          nutrients: {
+            protein: 35,
+            carbs: 25,
+            fats: 15
+          }
+        },
+        {
+          name: "Herb-Crusted Salmon with Quinoa",
+          image: "/api/placeholder/300/200",
+          calories: 550,
+          time: "7:00 PM",
+          type: "Dinner",
+          nutrients: {
+            protein: 40,
+            carbs: 35,
+            fats: 22
+          }
+        }
+      ],
+      totalCalories: 1350,
+      targetCalories: 2000,
+      progress: 67.5,
+      healthScore: 85
+    };
+  };
 
-      {/* Main Content */}
-      <main className="flex-1 p-8 overflow-auto">
-        <header className="flex justify-between items-center mb-8">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-800">Meal Planner</h2>
-            <p className="text-gray-500">Based on your preference, ChefGPT has curated your meal intake for today.</p>
-          </div>
-          <div className="flex space-x-4">
-            <Select>
-              <SelectTrigger className="w-48 flex items-center border-gray-300 shadow-sm px-4 py-2 rounded-lg">
-                <SelectValue placeholder="Select Day" />
-                <ChevronDown className="ml-2 h-4 w-4" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monday">Monday</SelectItem>
-                <SelectItem value="tuesday">Tuesday</SelectItem>
-                <SelectItem value="wednesday">Wednesday</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="icon" className="border-gray-300 shadow-sm">
-              <History className="h-5 w-5 text-gray-700" />
-            </Button>
-            <Button variant="outline" size="icon">
-              <Bell className="h-5 w-5" />
-            </Button>
-          </div>
-        </header>
+  const getHealthTip = () => {
+    const tips = [
+      "Try to eat protein with every meal to maintain steady energy levels.",
+      "Include colorful vegetables to maximize your nutrient intake.",
+      "Stay hydrated! Aim for 8 glasses of water daily.",
+    ];
+    return tips[Math.floor(Math.random() * tips.length)];
+  };
 
-        {isLoading ? (
-          <p className="text-center text-gray-500">Loading meal plan...</p>
-        ) : mealPlan ? (
-          <div className="bg-white p-6 shadow-lg rounded-lg">
-            <h3 className="text-xl font-semibold mb-4 text-gray-700">{mealPlan.day}</h3>
-            <div className="grid grid-cols-3 gap-6">
-              {mealPlan.meals.map((meal, index) => (
-                <div key={index} className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
-                  <img src={meal.image} alt={meal.name} className="rounded-lg shadow-sm" />
-                  <p className="mt-2 font-medium text-gray-800">{meal.name}</p>
-                  <p className="text-gray-500">{meal.calories} kcal</p>
-                </div>
-              ))}
-            </div>
-            <p className="mt-4 text-green-600 font-semibold">
-              Total calories to be consumed: {mealPlan.totalCalories} kcal
-            </p>
-          </div>
-        ) : (
-          <p className="text-center text-red-500">Failed to load meal plan.</p>
-        )}
-      </main>
+  const renderNutrientBadge = (value: number, label: string) => (
+    <div className="flex items-center gap-1 bg-gray-100 rounded-full px-3 py-1">
+      <span className="text-xs font-medium text-gray-600">{label}</span>
+      <span className="text-xs font-bold text-gray-800">{value}g</span>
     </div>
   );
-};
 
-export default Page;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Sidebar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {showHealthTip && (
+          <Alert className="mb-6 bg-green-50 border-green-200">
+            <Sparkles className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              {getHealthTip()}
+            </AlertDescription>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="ml-auto" 
+              onClick={() => setShowHealthTip(false)}
+            >
+              Dismiss
+            </Button>
+          </Alert>
+        )}
+
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Meal Planner</h1>
+            <p className="text-gray-500 mt-2">
+              {userData?.healthGoals ? 
+                `Working towards: ${userData.healthGoals}` : 
+                'Plan and track your daily nutrition goals'}
+            </p>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <Link href="/meal-planner/create">
+              <Button className="flex items-center gap-2 bg-green-600 hover:bg-green-700">
+                <Plus className="h-4 w-4" />
+                Create Meal Plan
+              </Button>
+            </Link>
+            
+            <Select value={selectedDay} onValueChange={setSelectedDay}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select day" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="tomorrow">Tomorrow</SelectItem>
+                <SelectItem value="custom">Custom Date</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Daily Summary</span>
+                  {mealPlan?.healthScore && (
+                    <Badge className="bg-green-100 text-green-800">
+                      Health Score: {mealPlan.healthScore}
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Scale className="h-5 w-5 text-green-600" />
+                      <span className="text-sm text-gray-600">Total Calories</span>
+                    </div>
+                    <span className="font-semibold">
+                      {mealPlan?.totalCalories} / {mealPlan?.targetCalories}
+                    </span>
+                  </div>
+                  
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div 
+                      className="bg-green-600 h-2.5 rounded-full transition-all duration-500" 
+                      style={{ width: `${mealPlan?.progress ?? 0}%` }}
+                    ></div>
+                  </div>
+
+                  <div className="pt-4">
+                    <Badge variant="outline" className="mb-2">Meal Times</Badge>
+                    {mealPlan?.meals.map((meal, index) => (
+                      <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-gray-400" />
+                          <span className="text-sm">{meal.time}</span>
+                        </div>
+                        <span className="text-sm font-medium">{meal.type}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="lg:col-span-2 space-y-6">
+              {mealPlan?.meals.map((meal, index) => (
+                <Card key={index} className="hover:shadow-lg transition-shadow duration-300">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-6">
+                      <img
+                        src={meal.image}
+                        alt={meal.name}
+                        className="w-32 h-32 rounded-lg object-cover"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <Badge className="bg-green-100 text-green-800 mb-2">{meal.type}</Badge>
+                          <span className="text-sm text-gray-500">{meal.time}</span>
+                        </div>
+                        <h3 className="text-xl font-semibold mb-2">{meal.name}</h3>
+                        <div className="flex items-center gap-4 mb-3">
+                          <div className="flex items-center gap-2">
+                            <Scale className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-600">{meal.calories} kcal</span>
+                          </div>
+                        </div>
+                        {meal.nutrients && (
+                          <div className="flex gap-2">
+                            {renderNutrientBadge(meal.nutrients.protein!, "Protein")}
+                            {renderNutrientBadge(meal.nutrients.carbs!, "Carbs")}
+                            {renderNutrientBadge(meal.nutrients.fats!, "Fats")}
+                          </div>
+                        )}
+                      </div>
+                      <Button variant="outline" className="ml-4">
+                        View Recipe
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
