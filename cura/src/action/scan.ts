@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { scanFoodLabelWithAI, analyzeFoodWithAI } from "@/lib/ai";
+import { scanFoodLabelWithAI, analyzeFoodWithAI } from "@/lib/gemini";
 
 export const scanFoodLabel = async (userId: string, labelText: string) => {
   // AI scans label for allergens, sugar, etc.
